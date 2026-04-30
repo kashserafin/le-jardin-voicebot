@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#0c0f0e" />
+		<title>Le Jardin Voicebot</title>
+		<link rel="stylesheet" href="/static/styles.css" />
+		<script src="/static/app.js" defer></script>
+	</head>
+	<body>
+		<main class="shell">
+			<section id="start-screen" class="start-screen">
+				<div class="brand-block">
+					<p class="eyebrow">Le Jardin reservations</p>
+					<h1>Voice concierge</h1>
+					<p class="lede">The reservation desk is ready.</p>
+				</div>
+
+				<button id="start-button" class="primary">
+					<span aria-hidden="true" class="button-icon">&#9658;</span>
+					<span>Start voicebot</span>
+				</button>
+			</section>
+
+			<section id="call-screen" class="call-screen hidden">
+				<header class="topbar">
+					<div>
+						<p class="eyebrow">Le Jardin</p>
+						<h1>Voice booking</h1>
+					</div>
+
+					<div class="topbar-actions">
+						<span class="status-pill" data-state="ready">
+							<span class="status-dot" aria-hidden="true"></span>
+							<span id="status">Ready</span>
+						</span>
+						<button id="reset-button" class="ghost">
+							<span aria-hidden="true" class="button-icon">&#8635;</span>
+							<span>New booking</span>
+						</button>
+					</div>
+				</header>
+
+				<div id="transcript" class="transcript" aria-live="polite"></div>
+
+				<div class="controls">
+					<button id="record-button" class="record" aria-describedby="record-help" disabled>
+						<span aria-hidden="true" class="record-light"></span>
+						<span id="record-button-label">Record answer</span>
+					</button>
+					<p id="record-help" class="sr-only">Click once to record. Click again to send.</p>
+				</div>
+
+				<audio id="assistant-audio" autoplay></audio>
+
+				<details class="debug">
+					<summary>Latency</summary>
+					<pre id="debug-output"></pre>
+				</details>
+			</section>
+		</main>
+	</body>
+</html>
