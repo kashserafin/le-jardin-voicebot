@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from ui.paths import AUDIO_DIR, STATIC_DIR
-from ui.routes import router
+from web.paths import AUDIO_DIR, STATIC_DIR
+from web.routes import router
 
 
 def create_app() -> FastAPI:
