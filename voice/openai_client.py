@@ -2,6 +2,7 @@ from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
+from config import settings
 from openai import OpenAI
 
 
@@ -13,7 +14,7 @@ class OpenAIAudioClient:
         tts_model: str = "gpt-4o-mini-tts",
         tts_voice: str = "marin",
     ) -> None:
-        self.client = client or OpenAI()
+        self.client = client or OpenAI(api_key=settings.openai_api_key)
         self.transcription_model = transcription_model
         self.tts_model = tts_model
         self.tts_voice = tts_voice

@@ -13,6 +13,8 @@ from voice.openai_client import OpenAIAudioClient
 
 router = APIRouter()
 
+audio_client = OpenAIAudioClient()
+
 
 @router.get("/")
 def index():
@@ -28,7 +30,7 @@ def favicon():
 async def start_session():
     session_id = uuid4().hex
     audio_url = await run_in_threadpool(
-        OpenAIAudioClient.synthesize_to_url,
+        audio_client.synthesize_to_url,
         INITIAL_MESSAGE,
         AUDIO_DIR,
     )
@@ -48,7 +50,7 @@ async def audio_turn(session_id: str = Form(...), audio: UploadFile = File(...))
         started = perf_counter()
         audio_bytes = await audio.read()
         transcript = await run_in_threadpool(
-            OpenAIAudioClient.transcribe_bytes,
+            audio_client.transcribe_bytes,
             audio_bytes,
             audio.filename or "recording.webm",
         )
@@ -63,7 +65,7 @@ async def audio_turn(session_id: str = Form(...), audio: UploadFile = File(...))
             timings["agent_ms"] = 0
 
         started = perf_counter()
-        audio_url = await run_in_threadpool(OpenAIAudioClient.synthesize_to_url, reply, AUDIO_DIR)
+        audio_url = await run_in_threadpool(audio_client.synthesize_to_url, reply, AUDIO_DIR)
         timings["tts_ms"] = round((perf_counter() - started) * 1000)
 
         return {
