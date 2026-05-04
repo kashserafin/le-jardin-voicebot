@@ -91,6 +91,8 @@ def ask_for_missing_details(
     validation_errors = state.get("validation_errors", [])
 
     question = build_missing_details_question(missing_fields, validation_errors)
+    if not question:
+        question = "Sorry, I didn't quite catch that. Could you please provide the booking details again?"
 
     # Interrupt the normal flow to ask the user for missing/invalid details
     user_input = interrupt(question)
