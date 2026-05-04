@@ -3,9 +3,10 @@ from typing import Literal
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 
 from agent.booking_guardrails import booking_rules_summary, validate_booking_date, validate_booking_time, validate_party_size, BookingValidationError
+from agent.helpers import build_missing_details_question
 from agent.state import BookingAgentState, BookingDetails
 from agent.prompts import BOOKING_DETAILS_PROMPT
 from config import settings
@@ -16,6 +17,7 @@ INITIAL_MESSAGE = "Welcome to Le Jardin! How may I help you?"
 llm = ChatOpenAI(api_key=settings.openai_api_key, model="gpt-5-mini")
 
 
+# Define node functions
 def collect_booking_details(
 	state: BookingAgentState,
 ) -> Command[Literal["validate_booking_details"]]:
@@ -84,7 +86,16 @@ def validate_booking_details(
 def ask_for_missing_details(
 	state: BookingAgentState,
 ) -> Command[Literal["collect_booking_details"]]:
-    return {}
+    
+    missing_fields = state.get("missing_details", [])
+    validation_errors = state.get("validation_errors", [])
+
+    question = build_missing_details_question(missing_fields, validation_errors)
+
+    # Interrupt the normal flow to ask the user for missing/invalid details
+    user_input = interrupt(question)
+
+    return Command(update={"last_message": user_input,}, goto="collect_booking_details")
 
 
 # This node always returns True for availability for demo purposes, but in a real implementation this would check against the restaurant's booking system

@@ -17,6 +17,7 @@ class BookingValidationIssue(TypedDict):
     field: str
     value: str
     message: str
+    reason: str
     example: str
 
 

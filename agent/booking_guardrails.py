@@ -10,10 +10,11 @@ MAX_PARTY_SIZE = 10
 
 
 class BookingValidationError(ValueError):
-	def __init__(self, field: str, message: str):
+	def __init__(self, field: str, message: str, reason: str):
 		super().__init__(message)
 		self.field = field
 		self.message = message
+		self.reason = reason
 
 
 def today() -> date:
@@ -54,12 +55,14 @@ def validate_booking_date(value: str | None, reference_date: date | None = None)
 		raise BookingValidationError(
 			"date",
 			"Date must be a real calendar date in DD-MM-YYYY format.",
+			"invalid_format",
 		) from exc
 
 	if raw_value != format_booking_date(booking_date):
 		raise BookingValidationError(
 			"date",
 			"Date must be a real calendar date in DD-MM-YYYY format.",
+			"invalid_format",
 		)
 
 	start, end = booking_date_window(reference_date)
@@ -67,12 +70,14 @@ def validate_booking_date(value: str | None, reference_date: date | None = None)
 		raise BookingValidationError(
 			"date",
 			f"Date must be today or later. Earliest accepted date is {format_booking_date(start)}.",
+			"date_in_past",
 		)
 	if booking_date > end:
 		raise BookingValidationError(
 			"date",
 			f"Date must be within the next {MAX_ADVANCE_DAYS} days. "
 			f"Latest accepted date is {format_booking_date(end)}.",
+			"date_too_far_in_future",
 		)
 
 	return format_booking_date(booking_date)
@@ -89,12 +94,14 @@ def validate_booking_time(value: str | None) -> str | None:
 		raise BookingValidationError(
 			"time",
 			"Time must be a real clock time in HH:MM format.",
+			"invalid_format",
 		) from exc
 
 	if raw_value != format_booking_time(booking_time):
 		raise BookingValidationError(
 			"time",
 			"Time must be a real clock time in HH:MM format.",
+			"invalid_format",
 		)
 
 	if booking_time < OPENING_TIME or booking_time > CLOSING_TIME:
@@ -102,6 +109,7 @@ def validate_booking_time(value: str | None) -> str | None:
 			"time",
 			f"Time must be between {format_booking_time(OPENING_TIME)} and "
 			f"{format_booking_time(CLOSING_TIME)}.",
+			"outside_opening_hours",
 		)
 
 	return format_booking_time(booking_time)
@@ -117,12 +125,21 @@ def validate_party_size(value: int | str | None) -> int | None:
 		raise BookingValidationError(
 			"party_size",
 			"Party size must be a whole number.",
+			"invalid_format",  
 		) from exc
 
-	if party_size < MIN_PARTY_SIZE or party_size > MAX_PARTY_SIZE:
+	if party_size < MIN_PARTY_SIZE:
 		raise BookingValidationError(
 			"party_size",
 			f"Party size must be between {MIN_PARTY_SIZE} and {MAX_PARTY_SIZE} people.",
+			"too_small_party_size",
+		)
+
+	if party_size > MAX_PARTY_SIZE:
+		raise BookingValidationError(
+			"party_size",
+			f"Party size must be between {MIN_PARTY_SIZE} and {MAX_PARTY_SIZE} people.",
+			"too_large_party_size",
 		)
 
 	return party_size
