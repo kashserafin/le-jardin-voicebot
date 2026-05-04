@@ -59,7 +59,7 @@ def validate_booking_details(
         try:
             date = validate_booking_date(date_value)
         except BookingValidationError as error:
-            validation_errors.append({"field": error.field, "value": date_value, "message": error.message, "example": "25-12-2024"})
+            validation_errors.append({"field": error.field, "value": date_value, "message": error.message, "reason": error.reason, "example": "25-12-2024"})
 
     if time_value is None:
         missing_fields.append("time")
@@ -67,7 +67,7 @@ def validate_booking_details(
         try:
             time = validate_booking_time(time_value)
         except BookingValidationError as error:
-            validation_errors.append({"field": error.field, "value": time_value, "message": error.message, "example": "19:30"})
+            validation_errors.append({"field": error.field, "value": time_value, "message": error.message, "reason": error.reason, "example": "19:30"})
 
     if party_size_value is None:
         missing_fields.append("party_size")
@@ -75,7 +75,7 @@ def validate_booking_details(
         try:
             party_size = validate_party_size(party_size_value)
         except BookingValidationError as error:
-            validation_errors.append({"field": error.field, "value": party_size_value, "message": error.message, "example": "4"})
+            validation_errors.append({"field": error.field, "value": party_size_value, "message": error.message, "reason": error.reason, "example": "4"})
 
     validated_bd = BookingDetails(date=date, time=time, party_size=party_size)
     goto = "check_availability" if not missing_fields and not validation_errors else "ask_for_missing_details"
