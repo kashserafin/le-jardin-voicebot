@@ -7,4 +7,8 @@ class Settings(BaseSettings):
     langfuse_secret_key: str
     langfuse_base_url: str
 
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
 settings = Settings()
