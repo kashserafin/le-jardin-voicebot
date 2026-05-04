@@ -17,7 +17,9 @@ langfuse_handler = CallbackHandler(public_key=settings.langfuse_public_key)
 
 def build_config(thread_id: str):
     return {
-        "thread_id": thread_id,
+        "configurable": {
+            "thread_id": thread_id,
+        },
         "callbacks": [langfuse_handler],
     }
     

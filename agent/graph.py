@@ -21,7 +21,7 @@ def collect_booking_details(
 ) -> Command[Literal["confirm_booking"]]:
 
     structured_llm = llm.with_structured_output(BookingDetails)
-    structured_llm.invoke(BOOKING_DETAILS_PROMPT.format(booking_rules="", latest_message=state.last_message))
+    structured_llm.invoke(BOOKING_DETAILS_PROMPT.format(booking_rules="", last_message=state.last_message))
 
     return Command(goto="confirm_booking")
 
