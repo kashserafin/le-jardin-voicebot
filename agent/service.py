@@ -54,6 +54,6 @@ def run_next_turn(message: str, thread_id: str) -> str:
         case "confirmed":
             return "Booking confirmed! See you then."
         case "cancelled":
-            return "No problem, your booking has been cancelled. Let us know if you change your mind!"
+            return "No problem, I won't make that booking. Let us know if you change your mind!"
         case _:
-            return "Sorry, something went wrong. Please try again."
+            return "Sorry, I hit a snag. Please try again."

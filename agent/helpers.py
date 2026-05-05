@@ -38,13 +38,13 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
     for error in validation_errors:
         match error["reason"]:
             case "date_in_past":
-                validation_messages.append("the date you provided is in the past")
+                validation_messages.append("that date has already passed")
             case "date_too_far_in_future":
-                validation_messages.append("we only accept bookings up to two weeks from today")
+                validation_messages.append("I can only book up to two weeks ahead")
             case "outside_opening_hours":
                 validation_messages.append("our opening hours are from 12 PM to 10 PM")
             case "too_large_party_size":
-                validation_messages.append("we can only take bookings for up to 10 people")
+                validation_messages.append("I can book up to 10 guests")
             case _:
                 generic_invalid_fields.append(invalid_field_names.get(error["field"]))
     
@@ -61,8 +61,8 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
 
     if missing_details and not validation_messages:
         return (
-            "Absolutely, I can help with that. "
-            f"Could you please tell me {join_human_readable(missing_details)}?"
+            "Sure, I just need a few more details. "
+            "Could you please tell me {join_human_readable(missing_details)}?"
         )
 
     if validation_messages and missing_details:
@@ -118,7 +118,7 @@ def build_booking_confirmation_question(booking_details: BookingDetails, custome
     spoken_time = format_booking_time_for_speech(booking_details.time)
 
     return (
-        f"Just to confirm, you'd like to book a table for {booking_details.party_size} "
+        f"Just to confirm, I've got {booking_details.party_size} "
         f"{guest_label} on {spoken_date} at {spoken_time}, "
         f"under the name {customer_name}, is that correct?"
     )

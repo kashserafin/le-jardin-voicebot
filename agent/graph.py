@@ -12,7 +12,7 @@ from agent.prompts import BOOKING_DETAILS_PROMPT, CUSTOMER_NAME_PROMPT, BOOKING_
 from openai_client import OpenAIClient
 
 
-INITIAL_MESSAGE = "Welcome to Le Jardin! How may I help you?"
+INITIAL_MESSAGE = "Welcome to Le Jardin! I can help you book a table. What day would you like to come in?"
 
 openai_client = OpenAIClient()
 llm = openai_client.chat_model(model="gpt-5.4-mini")
@@ -94,7 +94,7 @@ def ask_for_missing_details(
 
     question = build_missing_details_question(missing_fields, validation_errors)
     if not question:
-        question = "Sorry, I didn't quite catch that. Could you please provide the booking details again?"
+        question = "Sorry, I missed that. What day and time would you like to book, and for how many people?"
 
     # Interrupt the normal flow to ask the user for missing/invalid details
     user_input = interrupt(question)
@@ -114,7 +114,7 @@ def ask_for_customer_name(
 ) -> Command[Literal["collect_customer_name"]]:
 
     # Interrupt the normal flow to ask the user for their name
-    user_input = interrupt("Great, we have availability! Can I have your name for the booking?")
+    user_input = interrupt("Great, that time is available. Can I get a name for the reservation?")
 
     return Command(update={"last_message": user_input}, goto="collect_customer_name")
 
@@ -124,7 +124,7 @@ def retry_customer_name(
 ) -> Command[Literal["collect_customer_name"]]:
 
     # Interrupt the normal flow to ask the user for their name again if it was not captured successfully the first time
-    user_input = interrupt("Could you just say the name again?")
+    user_input = interrupt("SSorry, I didn't catch the name. Can you please repeat it?")
 
     return Command(update={"last_message": user_input}, goto="collect_customer_name")
 
