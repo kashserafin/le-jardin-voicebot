@@ -6,22 +6,32 @@ from agent.graph import app
 from config import settings
 
 
-langfuse_client = Langfuse(
+def create_langfuse_client() -> Langfuse | None:
+    if not settings.langfuse_enabled:
+        return None
+    
+    return Langfuse(
     public_key=settings.langfuse_public_key,
     secret_key=settings.langfuse_secret_key,
     base_url=settings.langfuse_base_url,
 )
 
-langfuse_handler = CallbackHandler(public_key=settings.langfuse_public_key)
+
+langfuse_client = create_langfuse_client()
+langfuse_handler = CallbackHandler(public_key=settings.langfuse_public_key) if langfuse_client else None
 
 
 def build_config(thread_id: str):
-    return {
+    config = {
         "configurable": {
             "thread_id": thread_id,
-        },
-        "callbacks": [langfuse_handler],
+        }
     }
+
+    if langfuse_handler:
+        config["callbacks"] = [langfuse_handler]
+
+    return config
     
 
 def run_next_turn(message: str, thread_id: str) -> str:
