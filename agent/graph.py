@@ -189,7 +189,7 @@ def classify_booking_cofirmation(
             return Command(goto="cancel_booking")
         case "change_request":
             # TODO: Implement logic to handle change requests
-            print(f"Change request received for fields: {decision.changed_fields}")
+            print(f"Change request received, cant handle it yet")
         case _:
             # TODO: Handle unclear intent by asking the user for clarification
             print(f"Unhandled booking confirmation intent: {decision.intent}")
