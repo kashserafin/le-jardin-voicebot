@@ -7,8 +7,8 @@ from langgraph.types import Command, interrupt
 
 from agent.booking_guardrails import booking_rules_summary, validate_booking_date, validate_booking_time, validate_party_size, BookingValidationError
 from agent.helpers import build_missing_details_question
-from agent.state import BookingAgentState, BookingDetails
-from agent.prompts import BOOKING_DETAILS_PROMPT
+from agent.state import BookingAgentState, BookingDetails, CustomerDetails
+from agent.prompts import BOOKING_DETAILS_PROMPT, CUSTOMER_NAME_PROMPT
 from config import settings
 
 
@@ -114,13 +114,35 @@ def ask_for_customer_name(
 
     user_input = interrupt("Great, we have availability! Can I have your name for the booking?")
 
-    return {"last_message": user_input}
+    return Command(update={"last_message": user_input}, goto="collect_customer_name")
+
+
+def retry_customer_name(
+	state: BookingAgentState,
+) -> Command[Literal["collect_customer_name"]]:
+
+    user_input = interrupt("Could you just say the name again?")
+
+    return Command(update={"last_message": user_input}, goto="collect_customer_name")
 
 
 def collect_customer_name(
 	state: BookingAgentState,
-) -> Command[Literal["confirm_booking", "ask_for_customer_name"]]:
-    return {}
+) -> Command[Literal["confirm_booking", "retry_customer_name"]]:
+
+    structured_llm = llm.with_structured_output(CustomerDetails)
+
+    try:
+        customer_details = structured_llm.invoke(CUSTOMER_NAME_PROMPT.format(last_message=state["last_message"]))
+        customer_name = customer_details.name if customer_details is not None else None
+    except Exception as e:
+        print(f"Error parsing customer name: {e}")
+        customer_name = None
+
+    if not customer_name:
+        return Command(goto="retry_customer_name")
+
+    return Command(update={"customer_name": customer_name}, goto="confirm_booking")
 
 
 def confirm_booking(state: BookingAgentState):
@@ -136,12 +158,12 @@ workflow.add_node("validate_booking_details", validate_booking_details)
 workflow.add_node("check_availability", check_availability)
 workflow.add_node("ask_for_missing_details", ask_for_missing_details)
 workflow.add_node("ask_for_customer_name", ask_for_customer_name)
+workflow.add_node("retry_customer_name", retry_customer_name)
 workflow.add_node("collect_customer_name", collect_customer_name)
 workflow.add_node("confirm_booking", confirm_booking)
 
 # Add edges
 workflow.add_edge(START, "collect_booking_details")
-workflow.add_edge("check_availability", "ask_for_customer_name") # This edge is only for demonstration purposes, in a real implementation you would have a separate edge for when availability is False
 workflow.add_edge("confirm_booking", END)
 
 memory = MemorySaver()
