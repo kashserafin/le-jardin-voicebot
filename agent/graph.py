@@ -30,9 +30,9 @@ def collect_booking_details(
         new_bd = structured_llm.invoke(BOOKING_DETAILS_PROMPT.format(booking_rules=booking_rules_summary(), last_message=state["last_message"]))
 
         merged_bd = BookingDetails(
-            date=new_bd.date if new_bd is not None else current_bd.date,
-            time=new_bd.time if new_bd is not None else current_bd.time,
-            party_size=new_bd.party_size if new_bd is not None else current_bd.party_size
+            date=new_bd.date if new_bd is not None and new_bd.date is not None else current_bd.date,
+            time=new_bd.time if new_bd is not None and new_bd.time is not None else current_bd.time,
+            party_size=new_bd.party_size if new_bd is not None and new_bd.party_size is not None else current_bd.party_size
         )
     except Exception as e:
         print(f"Error parsing booking details: {str(e)}")
