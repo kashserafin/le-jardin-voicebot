@@ -4,6 +4,8 @@ Le Jardin Voicebot is a small restaurant reservation voicebot demo. It is built 
 
 The frontend is intentionally minimal. The main thing this project is meant to demonstrate is the backend conversation flow: how the bot gathers details, validates them, asks follow-up questions, confirms the booking, and keeps the LLM inside a narrow role.
 
+<img width="798" height="892" alt="le_jardin_voicebot_v1" src="https://github.com/user-attachments/assets/9efb3a98-276d-4349-ac40-f64e950dd882" />
+
 ## What Works
 
 The demo supports a turn-based voice reservation flow:
