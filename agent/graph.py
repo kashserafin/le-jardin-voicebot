@@ -150,7 +150,7 @@ def collect_customer_name(
 
 def confirm_booking(
     state: BookingAgentState
-) -> Command[Literal["classify_booking_cofirmation"]]:
+) -> Command[Literal["classify_booking_confirmation"]]:
     
     bd = state.get("booking_details")
     customer_name = state.get("customer_name")
@@ -160,10 +160,10 @@ def confirm_booking(
     # Interrupt the normal flow to ask the user to confirm the booking details before finalizing the booking
     user_input = interrupt(question)
 
-    return Command(update={"last_message": user_input}, goto="classify_booking_cofirmation")
+    return Command(update={"last_message": user_input}, goto="classify_booking_confirmation")
 
 
-def classify_booking_cofirmation(
+def classify_booking_confirmation(
     state: BookingAgentState
 ) -> Command[Literal["finalize_booking", "cancel_booking"]]:
     
@@ -219,7 +219,7 @@ workflow.add_node("ask_for_customer_name", ask_for_customer_name)
 workflow.add_node("retry_customer_name", retry_customer_name)
 workflow.add_node("collect_customer_name", collect_customer_name)
 workflow.add_node("confirm_booking", confirm_booking)
-workflow.add_node("classify_booking_cofirmation", classify_booking_cofirmation)
+workflow.add_node("classify_booking_confirmation", classify_booking_confirmation)
 workflow.add_node("finalize_booking", finalize_booking)
 workflow.add_node("cancel_booking", cancel_booking)
 
