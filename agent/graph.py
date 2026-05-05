@@ -112,6 +112,7 @@ def ask_for_customer_name(
 	state: BookingAgentState,
 ) -> Command[Literal["collect_customer_name"]]:
 
+    # Interrupt the normal flow to ask the user for their name
     user_input = interrupt("Great, we have availability! Can I have your name for the booking?")
 
     return Command(update={"last_message": user_input}, goto="collect_customer_name")
@@ -121,6 +122,7 @@ def retry_customer_name(
 	state: BookingAgentState,
 ) -> Command[Literal["collect_customer_name"]]:
 
+    # Interrupt the normal flow to ask the user for their name again if it was not captured successfully the first time
     user_input = interrupt("Could you just say the name again?")
 
     return Command(update={"last_message": user_input}, goto="collect_customer_name")
