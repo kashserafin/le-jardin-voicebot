@@ -123,7 +123,7 @@ def retry_customer_name(
 ) -> Command[Literal["collect_customer_name"]]:
 
     # Interrupt the normal flow to ask the user for their name again if it was not captured successfully the first time
-    user_input = interrupt("SSorry, I didn't catch the name. Can you please repeat it?")
+    user_input = interrupt("Sorry, I didn't catch the name. Can you please repeat it?")
 
     return Command(update={"last_message": user_input}, goto="collect_customer_name")
 
