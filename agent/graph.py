@@ -52,6 +52,7 @@ def validate_booking_details(
     date_value = bd.date
     time_value = bd.time
     party_size_value = bd.party_size
+    date, time, party_size = None, None, None
 
     if date_value is None:
         missing_fields.append("date")
