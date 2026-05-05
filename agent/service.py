@@ -41,7 +41,7 @@ def run_next_turn(message: str, thread_id: str) -> str:
         request_config,
     )
 
-    interrupts = result.get("__interrupts__")
+    interrupts = result.get("__interrupt__")
     if interrupts:
         return interrupts[0].value
     
