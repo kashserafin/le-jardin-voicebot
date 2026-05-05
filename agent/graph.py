@@ -111,7 +111,10 @@ def check_availability(
 def ask_for_customer_name(
 	state: BookingAgentState,
 ) -> Command[Literal["collect_customer_name"]]:
-    return {}
+
+    user_input = interrupt("Great, we have availability! Can I have your name for the booking?")
+
+    return {"last_message": user_input}
 
 
 def collect_customer_name(
@@ -138,6 +141,7 @@ workflow.add_node("confirm_booking", confirm_booking)
 
 # Add edges
 workflow.add_edge(START, "collect_booking_details")
+workflow.add_edge("check_availability", "ask_for_customer_name") # This edge is only for demonstration purposes, in a real implementation you would have a separate edge for when availability is False
 workflow.add_edge("confirm_booking", END)
 
 memory = MemorySaver()
