@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from agent.booking_guardrails import DATE_FORMAT, TIME_FORMAT
 from agent.state import BookingDetails, BookingValidationIssue
 
 
@@ -74,13 +77,48 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
     return ""
 
 
+def format_booking_date_for_speech(value: str | None) -> str:
+    """Format a canonical DD-MM-YYYY date for natural spoken output."""
+
+    if value is None:
+        return ""
+
+    try:
+        booking_date = datetime.strptime(value, DATE_FORMAT).date()
+    except ValueError:
+        return value
+
+    return f"{booking_date.strftime('%A')}, {booking_date.day} {booking_date.strftime('%B')}"
+
+
+def format_booking_time_for_speech(value: str | None) -> str:
+    """Format a canonical HH:MM time for natural spoken output."""
+
+    if value is None:
+        return ""
+
+    try:
+        booking_time = datetime.strptime(value, TIME_FORMAT).time()
+    except ValueError:
+        return value
+
+    hour = booking_time.hour % 12 or 12
+    suffix = "AM" if booking_time.hour < 12 else "PM"
+    if booking_time.minute == 0:
+        return f"{hour} {suffix}"
+
+    return f"{hour}:{booking_time.minute:02d} {suffix}"
+
+
 def build_booking_confirmation_question(booking_details: BookingDetails, customer_name: str) -> str:
     """Build a confirmation question to confirm the booking details with the user before finalizing the booking."""
 
     guest_label = "guest" if booking_details.party_size == 1 else "guests"
+    spoken_date = format_booking_date_for_speech(booking_details.date)
+    spoken_time = format_booking_time_for_speech(booking_details.time)
 
     return (
         f"Just to confirm, you'd like to book a table for {booking_details.party_size} "
-        f"{guest_label} on {booking_details.date} at {booking_details.time}, "
+        f"{guest_label} on {spoken_date} at {spoken_time}, "
         f"under the name {customer_name}, is that correct?"
     )

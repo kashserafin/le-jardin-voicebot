@@ -1,4 +1,10 @@
-from agent.helpers import build_missing_details_question
+from agent.helpers import (
+    build_booking_confirmation_question,
+    build_missing_details_question,
+    format_booking_date_for_speech,
+    format_booking_time_for_speech,
+)
+from agent.state import BookingDetails
 
 
 def validation_issue(field: str, reason: str) -> dict[str, str]:
@@ -80,4 +86,27 @@ def test_validation_errors_and_missing_fields_use_separate_follow_up():
     assert question == (
         "Sorry, we only accept bookings up to two weeks from today. "
         "Could you please tell me what time you'd like and how many guests are coming?"
+    )
+
+
+def test_formats_canonical_booking_date_for_speech():
+    assert format_booking_date_for_speech("09-05-2026") == "Saturday, 9 May"
+
+
+def test_formats_canonical_booking_time_for_speech():
+    assert format_booking_time_for_speech("19:30") == "7:30 PM"
+    assert format_booking_time_for_speech("12:00") == "12 PM"
+    assert format_booking_time_for_speech("22:00") == "10 PM"
+
+
+def test_booking_confirmation_question_uses_spoken_date_and_time():
+    question = build_booking_confirmation_question(
+        BookingDetails(date="09-05-2026", time="19:30", party_size=2),
+        "Ada Lovelace",
+    )
+
+    assert question == (
+        "Just to confirm, you'd like to book a table for 2 guests "
+        "on Saturday, 9 May at 7:30 PM, under the name Ada Lovelace, "
+        "is that correct?"
     )
