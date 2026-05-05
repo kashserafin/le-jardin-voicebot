@@ -9,12 +9,13 @@ from agent.booking_guardrails import booking_rules_summary, validate_booking_dat
 from agent.helpers import build_missing_details_question, build_booking_confirmation_question
 from agent.state import BookingAgentState, BookingConfirmationDecision, BookingDetails, CustomerDetails
 from agent.prompts import BOOKING_DETAILS_PROMPT, CUSTOMER_NAME_PROMPT, BOOKING_CONFIRMATION_PROMPT
-from config import settings
+from openai_client import OpenAIClient
 
 
 INITIAL_MESSAGE = "Welcome to Le Jardin! How may I help you?"
 
-llm = ChatOpenAI(api_key=settings.openai_api_key, model="gpt-5.4-mini")
+openai_client = OpenAIClient()
+llm = openai_client.chat_model(model="gpt-5.4-mini")
 
 
 # Define node functions

@@ -7,8 +7,8 @@ from starlette.concurrency import run_in_threadpool
 
 from agent.graph import INITIAL_MESSAGE
 from agent.service import run_next_turn
+from openai_client import OpenAIAudioClient
 from web.paths import AUDIO_DIR, STATIC_DIR
-from voice.openai_client import OpenAIAudioClient
 
 
 router = APIRouter()
