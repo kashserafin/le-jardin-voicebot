@@ -4,13 +4,29 @@ from pydantic import BaseModel, Field
 
 
 class BookingDetails(BaseModel):
-	date: str | None = Field(None, description="Booking date in DD-MM-YYYY format.", example="25-12-2024")
-	time: str | None = Field(None, description="Booking time in HH:MM format.", example="19:30")
-	party_size: int | None = Field(None, description="Number of people", example=4)
+	date: str | None = Field(
+        None,
+        description="Booking date in DD-MM-YYYY format.",
+        json_schema_extra={"example": "25-12-2024"}
+    )
+	time: str | None = Field(
+        None,
+        description="Booking time in HH:MM format.",
+        json_schema_extra={"example": "19:30"}
+    )
+	party_size: int | None = Field(
+        None,
+        description="Number of people",
+        json_schema_extra={"example": 4}
+    )
 
 
 class CustomerDetails(BaseModel):
-    name: str | None = Field(None, description="Customer name for the table booking", example="Smith")
+    name: str | None = Field(
+        None,
+        description="Customer name for the table booking",
+        json_schema_extra={"example": "Smith"}
+    )
 
 
 class BookingValidationIssue(TypedDict):
