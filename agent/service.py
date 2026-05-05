@@ -37,6 +37,9 @@ def run_next_turn(message: str, thread_id: str) -> str:
             "booking_details": None,
             "availability": None,
             "customer_name": None,
+            "missing_details": None,
+            "validation_errors": None,
+            "booking_status": None,
         },
         request_config,
     )
@@ -45,11 +48,12 @@ def run_next_turn(message: str, thread_id: str) -> str:
     if interrupts:
         return interrupts[0].value
     
-    is_available = result.get("availability")
-    
-    if is_available:
-        return "Booking confirmed! See you then."
-    elif is_available is False:
-        return "Sorry, we don't have availability for that time."
-    else:
-        return "Sorry, something went wrong. Please try again."
+    booking_status = result.get("booking_status")
+
+    match booking_status:
+        case "confirmed":
+            return "Booking confirmed! See you then."
+        case "cancelled":
+            return "No problem, your booking has been cancelled. Let us know if you change your mind!"
+        case _:
+            return "Sorry, something went wrong. Please try again."

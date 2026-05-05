@@ -17,3 +17,17 @@ Do not guess, assume, invent, default, or fill in missing information.
 
 ### User message:
 {last_message}"""
+
+
+BOOKING_CONFIRMATION_PROMPT = """You are a narrow intent classifier and extractor for a restaurant reservation confirmation.
+
+Classify the user's reply to the final booking confirmation question.
+
+Intent definitions:
+- confirm: the user clearly accepts the booking as currently summarized.
+- decline: the user clearly rejects, cancels, or does not want the booking.
+- change_request: the user asks to change the date, time, party size, or customer name.
+- unclear: the reply does not clearly confirm, decline, or request a change.
+
+### User message:
+{last_message}"""

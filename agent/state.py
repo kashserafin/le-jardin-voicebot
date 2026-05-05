@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,12 @@ class BookingValidationIssue(TypedDict):
     example: str
 
 
+class BookingConfirmationDecision(BaseModel):
+    intent: Literal["confirm", "decline", "change_request", "unclear"] = Field(
+        ..., 
+        description="Whether the user confirms the booking, declines it, asks to change it, or gives an unclear answer."
+    )
+
 class BookingAgentState(TypedDict):
     last_message: str
     booking_details: BookingDetails | None
@@ -28,3 +34,4 @@ class BookingAgentState(TypedDict):
     customer_name: str | None
     missing_details: list[str] | None
     validation_errors: list[BookingValidationIssue] | None
+    booking_status: Literal["confirmed", "cancelled"] | None

@@ -1,4 +1,4 @@
-from agent.state import BookingValidationIssue
+from agent.state import BookingDetails, BookingValidationIssue
 
 
 def join_human_readable(items: list[str]) -> str:
@@ -72,3 +72,15 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
         return f"Sorry, {join_human_readable(validation_messages)}. Could you please try again?"
 
     return ""
+
+
+def build_booking_confirmation_question(booking_details: BookingDetails, customer_name: str) -> str:
+    """Build a confirmation question to confirm the booking details with the user before finalizing the booking."""
+
+    guest_label = "guest" if booking_details.party_size == 1 else "guests"
+
+    return (
+        f"Just to confirm, you'd like to book a table for {booking_details.party_size} "
+        f"{guest_label} on {booking_details.date} at {booking_details.time}, "
+        f"under the name {customer_name}, is that correct?"
+    )
