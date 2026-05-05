@@ -14,7 +14,7 @@ from config import settings
 
 INITIAL_MESSAGE = "Welcome to Le Jardin! How may I help you?"
 
-llm = ChatOpenAI(api_key=settings.openai_api_key, model="gpt-5-mini")
+llm = ChatOpenAI(api_key=settings.openai_api_key, model="gpt-5.4-mini")
 
 
 # Define node functions
