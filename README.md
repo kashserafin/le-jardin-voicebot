@@ -71,7 +71,7 @@ Important files:
 
 ## Requirements
 
-- Python `>=3.14`
+- Python `>=3.11`
 - `uv`
 - An OpenAI API key
 - A browser with microphone support
