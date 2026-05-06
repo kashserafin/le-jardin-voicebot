@@ -24,7 +24,7 @@ def test_missing_fields_only_uses_booking_prompt():
     )
 
     assert question == (
-        "Absolutely, I can help with that. "
+        "Sure. "
         "Could you please tell me the day you'd like to come in and how many guests are coming?"
     )
 
@@ -40,9 +40,9 @@ def test_explicit_validation_errors_only_explain_the_issues():
     )
 
     assert question == (
-        "Sorry, the date you provided is in the past, "
+        "Sorry, that date has already passed, "
         "our opening hours are from 12 PM to 10 PM, "
-        "and we can only take bookings for up to 10 people. "
+        "and I can book up to 10 guests. "
         "Could you please try again?"
     )
 
@@ -72,7 +72,7 @@ def test_explicit_and_generic_validation_errors_are_combined():
     )
 
     assert question == (
-        "Sorry, we only accept bookings up to two weeks from today "
+        "Sorry, I can only book up to two weeks ahead "
         "and I didn't quite catch the time. Could you please try again?"
     )
 
@@ -84,7 +84,7 @@ def test_validation_errors_and_missing_fields_use_separate_follow_up():
     )
 
     assert question == (
-        "Sorry, we only accept bookings up to two weeks from today. "
+        "Sorry, I can only book up to two weeks ahead. "
         "Could you please tell me what time you'd like and how many guests are coming?"
     )
 
@@ -106,7 +106,7 @@ def test_booking_confirmation_question_uses_spoken_date_and_time():
     )
 
     assert question == (
-        "Just to confirm, you'd like to book a table for 2 guests "
+        "Just to confirm, I've got 2 guests "
         "on Saturday, 9 May at 7:30 PM, under the name Ada Lovelace, "
         "is that correct?"
     )

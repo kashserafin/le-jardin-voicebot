@@ -47,7 +47,7 @@ def test_audio_turn_transcribes_runs_agent_and_synthesizes_reply(monkeypatch):
 
     def fake_run_next_turn(message: str, thread_id: str) -> str:
         agent_calls.append((message, thread_id))
-        return "Great, we have availability! Can I have your name for the booking?"
+        return "Great, that time is available. Can I get a name for the reservation?"
 
     monkeypatch.setattr("web.routes.audio_client", fake_audio_client)
     monkeypatch.setattr("web.routes.run_next_turn", fake_run_next_turn)
@@ -61,7 +61,7 @@ def test_audio_turn_transcribes_runs_agent_and_synthesizes_reply(monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["transcript"] == "Book a table for four."
-    assert body["reply"] == "Great, we have availability! Can I have your name for the booking?"
+    assert body["reply"] == "Great, that time is available. Can I get a name for the reservation?"
     assert body["audio_url"] == "/audio/fake-1.mp3"
     assert set(body["timings"]) == {"transcribe_ms", "agent_ms", "tts_ms"}
     assert all(value >= 0 for value in body["timings"].values())

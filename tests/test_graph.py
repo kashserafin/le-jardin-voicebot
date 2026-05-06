@@ -89,11 +89,11 @@ def test_complete_booking_flow_confirms_after_customer_name(monkeypatch):
         initial_state("Can I book a table for four on 10-05-2026 at 19:30?"),
         config,
     )
-    assert interrupt_text(result) == "Great, we have availability! Can I have your name for the booking?"
+    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
 
     result = graph.app.invoke(Command(resume="Ada Lovelace"), config)
     assert interrupt_text(result) == (
-        "Just to confirm, you'd like to book a table for 4 guests "
+        "Just to confirm, I've got 4 guests "
         "on Sunday, 10 May at 7:30 PM, under the name Ada Lovelace, "
         "is that correct?"
     )
@@ -123,13 +123,13 @@ def test_missing_booking_details_are_requested_and_merged(monkeypatch):
     result = graph.app.invoke(initial_state("I'd like a table for two."), config)
 
     assert interrupt_text(result) == (
-        "Absolutely, I can help with that. "
+        "Sure. "
         "Could you please tell me the day you'd like to come in and what time you'd like?"
     )
 
     result = graph.app.invoke(Command(resume="11-05-2026 at 18:00"), config)
 
-    assert interrupt_text(result) == "Great, we have availability! Can I have your name for the booking?"
+    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
     assert result["booking_details"] == BookingDetails(date="11-05-2026", time="18:00", party_size=2)
     assert result["missing_details"] == []
     assert result["validation_errors"] == []
@@ -153,9 +153,9 @@ def test_invalid_booking_details_are_rejected_before_availability(monkeypatch):
     )
 
     assert interrupt_text(result) == (
-        "Sorry, the date you provided is in the past, "
+        "Sorry, that date has already passed, "
         "our opening hours are from 12 PM to 10 PM, "
-        "and we can only take bookings for up to 10 people. "
+        "and I can book up to 10 guests. "
         "Could you please try again?"
     )
     assert result["availability"] is None
@@ -181,15 +181,15 @@ def test_customer_name_retry_keeps_booking_until_name_is_collected(monkeypatch):
     config = graph_config()
 
     result = graph.app.invoke(initial_state("Table for three on 12-05-2026 at 20:00."), config)
-    assert interrupt_text(result) == "Great, we have availability! Can I have your name for the booking?"
+    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
 
     result = graph.app.invoke(Command(resume="It's me."), config)
-    assert interrupt_text(result) == "Could you just say the name again?"
+    assert interrupt_text(result) == "Sorry, I didn't catch the name. Can you please repeat it?"
     assert result["booking_details"] == BookingDetails(date="12-05-2026", time="20:00", party_size=3)
 
     result = graph.app.invoke(Command(resume="Grace Hopper"), config)
     assert interrupt_text(result) == (
-        "Just to confirm, you'd like to book a table for 3 guests "
+        "Just to confirm, I've got 3 guests "
         "on Tuesday, 12 May at 8 PM, under the name Grace Hopper, "
         "is that correct?"
     )
