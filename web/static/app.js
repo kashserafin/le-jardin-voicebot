@@ -4,6 +4,9 @@ let recorder = null;
 let chunks = [];
 let isRecording = false;
 let pendingAssistantText = null;
+let recordingTimeoutId = null;
+
+const MAX_RECORDING_MS = 60_000;
 
 const startScreen = document.querySelector("#start-screen");
 const callScreen = document.querySelector("#call-screen");
@@ -52,6 +55,21 @@ function appendTurn(role, text) {
 function preferredMimeType() {
   const options = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
   return options.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function clearRecordingTimeout() {
+  if (recordingTimeoutId) {
+    clearTimeout(recordingTimeoutId);
+    recordingTimeoutId = null;
+  }
+}
+
+function stopRecording() {
+  clearRecordingTimeout();
+
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+  }
 }
 
 async function playAssistant(audioUrl, text) {
@@ -107,7 +125,7 @@ resetButton.addEventListener("click", () => {
 
 recordButton.addEventListener("click", async () => {
   if (isRecording) {
-    recorder.stop();
+    stopRecording();
     return;
   }
 
@@ -131,6 +149,7 @@ recordButton.addEventListener("click", async () => {
   recorder.addEventListener("stop", sendRecording);
 
   recorder.start();
+  recordingTimeoutId = setTimeout(stopRecording, MAX_RECORDING_MS);
   isRecording = true;
   recordButton.classList.add("recording");
   recordButtonLabel.textContent = "Stop and send";
@@ -138,6 +157,7 @@ recordButton.addEventListener("click", async () => {
 });
 
 async function sendRecording() {
+  clearRecordingTimeout();
   isRecording = false;
   recordButton.disabled = true;
   recordButton.classList.remove("recording");

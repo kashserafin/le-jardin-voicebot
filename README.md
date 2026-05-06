@@ -120,6 +120,8 @@ DEMO_PASSCODE="shared-demo-passcode"
 
 When `DEMO_PASSCODE` is set, the app requires HTTP Basic authentication before serving the UI or API routes. Use any username and the configured pascode as the password. Leave it blank for unrestricted local development.
 
+The browser recorder stops each spoken turn automatically after 60 seconds to keep the demo turn short.
+
 ## Run The Demo
 
 Start the server:
