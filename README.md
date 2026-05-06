@@ -217,3 +217,5 @@ If imports fail while running tests, make sure you are using the repository's `p
 If the app fails on startup or the first voice turn, check `OPENAI_API_KEY` in `.env`.
 
 If recording does not start, check browser microphone permissions. Localhost should work in modern browsers, but microphone APIs still require user permission.
+
+Copyright (c) 2026 Katarzyna Serafin. All rights reserved.
