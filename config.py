@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None
     langfuse_base_url: str | None = None
+    demo_passcode: str | None = None
 
-    @field_validator("langfuse_public_key", "langfuse_secret_key", "langfuse_base_url", mode="before")
+    @field_validator("langfuse_public_key", "langfuse_secret_key", "langfuse_base_url", "demo_passcode", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         return None if isinstance(v, str) and not v.strip() else v
@@ -18,5 +19,6 @@ class Settings(BaseSettings):
     @property
     def langfuse_enabled(self) -> bool:
         return bool(self.langfuse_public_key and self.langfuse_secret_key)
+
 
 settings = Settings()

@@ -6,10 +6,16 @@ os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 os.environ.setdefault("LANGFUSE_PUBLIC_KEY", "test-langfuse-public-key")
 os.environ.setdefault("LANGFUSE_SECRET_KEY", "test-langfuse-secret-key")
 os.environ.setdefault("LANGFUSE_BASE_URL", "http://localhost")
+os.environ.setdefault("DEMO_PASSCODE", "test-demo-passcode")
 
 from agent.graph import INITIAL_MESSAGE
 from web.app import create_app
 from web.paths import AUDIO_DIR
+
+
+def create_unguarded_app(monkeypatch):
+    monkeypatch.setattr("web.app.settings.demo_passcode", None)
+    return create_app()
 
 
 class FakeAudioClient:
@@ -31,7 +37,7 @@ def test_start_session_returns_initial_reply_and_audio(monkeypatch):
     fake_audio_client = FakeAudioClient()
     monkeypatch.setattr("web.routes.audio_client", fake_audio_client)
 
-    response = TestClient(create_app()).post("/session/start")
+    response = TestClient(create_unguarded_app(monkeypatch)).post("/session/start")
 
     assert response.status_code == 200
     body = response.json()
@@ -52,7 +58,7 @@ def test_audio_turn_transcribes_runs_agent_and_synthesizes_reply(monkeypatch):
     monkeypatch.setattr("web.routes.audio_client", fake_audio_client)
     monkeypatch.setattr("web.routes.run_next_turn", fake_run_next_turn)
 
-    response = TestClient(create_app()).post(
+    response = TestClient(create_unguarded_app(monkeypatch)).post(
         "/turn/audio",
         data={"session_id": "session-123"},
         files={"audio": ("turn.webm", b"fake audio bytes", "audio/webm")},
@@ -77,7 +83,7 @@ def test_audio_turn_skips_agent_when_transcript_is_empty(monkeypatch):
     monkeypatch.setattr("web.routes.audio_client", fake_audio_client)
     monkeypatch.setattr("web.routes.run_next_turn", lambda *args: agent_calls.append(args))
 
-    response = TestClient(create_app()).post(
+    response = TestClient(create_unguarded_app(monkeypatch)).post(
         "/turn/audio",
         data={"session_id": "session-123"},
         files={"audio": ("turn.webm", b"silent audio", "audio/webm")},
