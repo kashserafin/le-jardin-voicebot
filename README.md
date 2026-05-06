@@ -112,6 +112,14 @@ LANGFUSE_PUBLIC_KEY=""
 LANGFUSE_BASE_URL=""
 ```
 
+Optional demo access gate:
+
+```bash
+DEMO_PASSCODE="shared-demo-passcode"
+```
+
+When `DEMO_PASSCODE` is set, the app requires HTTP Basic authentication before serving the UI or API routes. Use any username and the configured pascode as the password. Leave it blank for unrestricted local development.
+
 ## Run The Demo
 
 Start the server:
