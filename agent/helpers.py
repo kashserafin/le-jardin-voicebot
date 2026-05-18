@@ -6,21 +6,23 @@ from agent.state import BookingDetails, BookingValidationIssue
 
 def join_human_readable(items: list[str]) -> str:
     """Join a list of strings into a human-readable string with commas and 'and'."""
-    
+
     if len(items) < 2:
         return "".join(items)
-    
+
     if len(items) == 2:
         return " and ".join(items)
-    
+
     all_but_last = ", ".join(items[:-1])
 
     return f"{all_but_last}, and {items[-1]}"
 
 
-def build_missing_details_question(missing_fields: list[str], validation_errors: list[BookingValidationIssue]) -> str:
+def build_missing_details_question(
+    missing_fields: list[str], validation_errors: list[BookingValidationIssue]
+) -> str:
     """Build a question to ask the user for missing or invalid booking details."""
-    
+
     missing_field_questions = {
         "date": "the day you'd like to come in",
         "time": "what time you'd like",
@@ -47,7 +49,7 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
                 validation_messages.append("I can book up to 10 guests")
             case _:
                 generic_invalid_fields.append(invalid_field_names.get(error["field"]))
-    
+
     if generic_invalid_fields:
         validation_messages.append(
             f"I didn't quite catch {join_human_readable(generic_invalid_fields)}"
@@ -61,8 +63,7 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
 
     if missing_details and not validation_messages:
         return (
-            "Sure. "
-            f"Could you please tell me {join_human_readable(missing_details)}?"
+            "Sure. " f"Could you please tell me {join_human_readable(missing_details)}?"
         )
 
     if validation_messages and missing_details:
@@ -74,7 +75,7 @@ def build_missing_details_question(missing_fields: list[str], validation_errors:
     if validation_messages:
         return f"Sorry, {join_human_readable(validation_messages)}. Could you please try again?"
 
-    return ""
+    return "Sorry, I missed that. What day and time would you like to book, and for how many people?"
 
 
 def format_booking_date_for_speech(value: str | None) -> str:
@@ -110,7 +111,9 @@ def format_booking_time_for_speech(value: str | None) -> str:
     return f"{hour}:{booking_time.minute:02d} {suffix}"
 
 
-def build_booking_confirmation_question(booking_details: BookingDetails, customer_name: str) -> str:
+def build_booking_confirmation_question(
+    booking_details: BookingDetails, customer_name: str
+) -> str:
     """Build a confirmation question to confirm the booking details with the user before finalizing the booking."""
 
     guest_label = "guest" if booking_details.party_size == 1 else "guests"
