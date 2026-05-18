@@ -27,7 +27,7 @@ class BookingStatus(StrEnum):
 class BookingPhase(StrEnum):
     BOOKING_DETAILS = "booking_details"
     CUSTOMER_NAME = "customer_name"
-    CONFIRMATION = "confirmation"
+    CONFIRMATION = "booking_confirmation"
     CHANGE_REQUEST = "change_request"
     DONE = "done"
 
