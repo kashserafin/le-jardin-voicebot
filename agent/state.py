@@ -45,11 +45,19 @@ class BookingValidationIssue(TypedDict):
     example: str
 
 
+BookingStatus = Literal["confirmed", "cancelled"]
+
 BookingPhase = Literal["booking_details", "customer_name", "confirmation", "change_request", "done"] 
 
-GlobalIntent = Literal["none", "restart", "cancel", "help"]
+TurnIntent = Literal["phase_input", "restart", "cancel", "help", "out_of_scope", "unclear"]
 
-BookingStatus = Literal["confirmed", "cancelled"]
+
+class TurnIntentDecision(BaseModel):
+     intent: TurnIntent = Field(
+        ...,
+        description="The routing intent for this turn: either current phase input, "
+        "a global command, out-of-scope input, or unclear input."
+    )
 
 
 class BookingAgentState(TypedDict):
@@ -61,4 +69,4 @@ class BookingAgentState(TypedDict):
     validation_errors: list[BookingValidationIssue] | None
     booking_status: BookingStatus | None
     phase: BookingPhase | None
-    global_intent: GlobalIntent | None
+    turn_intent: TurnIntent | None
