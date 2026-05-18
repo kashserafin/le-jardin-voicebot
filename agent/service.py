@@ -2,23 +2,27 @@ from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 from langgraph.types import Command
 
-from agent.graph import app
+from agent.graph import app, build_initial_state
 from config import settings
 
 
 def create_langfuse_client() -> Langfuse | None:
     if not settings.langfuse_enabled:
         return None
-    
+
     return Langfuse(
-    public_key=settings.langfuse_public_key,
-    secret_key=settings.langfuse_secret_key,
-    base_url=settings.langfuse_base_url,
-)
+        public_key=settings.langfuse_public_key,
+        secret_key=settings.langfuse_secret_key,
+        base_url=settings.langfuse_base_url,
+    )
 
 
 langfuse_client = create_langfuse_client()
-langfuse_handler = CallbackHandler(public_key=settings.langfuse_public_key) if langfuse_client else None
+langfuse_handler = (
+    CallbackHandler(public_key=settings.langfuse_public_key)
+    if langfuse_client
+    else None
+)
 
 
 def build_config(thread_id: str):
@@ -32,7 +36,7 @@ def build_config(thread_id: str):
         config["callbacks"] = [langfuse_handler]
 
     return config
-    
+
 
 def run_next_turn(message: str, thread_id: str) -> str:
     request_config = build_config(thread_id)
@@ -42,22 +46,14 @@ def run_next_turn(message: str, thread_id: str) -> str:
         result = app.invoke(Command(resume=message), request_config)
     else:
         result = app.invoke(
-        {
-            "last_message": message,
-            "booking_details": None,
-            "availability": None,
-            "customer_name": None,
-            "missing_details": None,
-            "validation_errors": None,
-            "booking_status": None,
-        },
-        request_config,
-    )
+            build_initial_state(message),
+            request_config,
+        )
 
     interrupts = result.get("__interrupt__")
     if interrupts:
         return interrupts[0].value
-    
+
     booking_status = result.get("booking_status")
 
     match booking_status:
