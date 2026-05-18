@@ -42,3 +42,39 @@ Classify the user's reply to the final booking confirmation question.
 
 ### User message:
 {last_message}"""
+
+
+TURN_INTENT_PROMPT = """You are a narrow turn intent classifier for a restaurant reservation voicebot.
+
+Classify the user's message for routing based on the main intent of the message.
+
+### Current booking phase:
+{phase}
+
+### Intent definitions:
+- phase_input: the message should be handled by the current booking phase.
+- restart: the user wants to discard the current reservation attempt and start over.
+- cancel: the user wants to stop or cancel the current reservation attempt.
+- help: the user is asking what they can say or how the bot works.
+- out_of_scope: the user asks for something unrelated to restaurant reservations.
+- unclear: the message does not clearly fit into any of the other categories or is too garbled to understand
+
+### Routing rules:
+Only choose restart, cancel, or help when that global command is the user's main intent.
+Choose phase_input for ordinary booking details, customer names, confirmation answers, and change requests.
+Choose phase_input when the word "help" appears inside a normal booking request, such a "can you help me book a table for Saturday?".
+Choose out_of_scope for messages that are clearly not about restaurant reservations, such as weather, news, trivia, joke, 
+or general retaurant facts not needed for booking, or unrelated taks.
+
+### Examples:
+"start over" -> restart
+"cancel this" -> cancel
+"what should I say" -> help
+"Can you help me book a table for Saturday?" -> phase_input
+"yes, that's correct" -> phase_input
+"what's the weather tomorrow?" -> out_of_scope
+"blablabla" -> unclear
+"actually I want to change to Sunday" -> phase_input
+
+### User message:
+{last_message}"""
