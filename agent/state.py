@@ -29,6 +29,14 @@ class CustomerDetails(BaseModel):
     )
 
 
+class BookingConfirmationDecision(BaseModel):
+    intent: Literal["confirm", "decline", "change_request", "unclear"] = Field(
+        ..., 
+        description="Whether the user confirms the booking, declines it, asks to change it, "
+        "or gives an unclear answer."
+    )
+
+
 class BookingValidationIssue(TypedDict):
     field: str
     value: str
@@ -37,11 +45,12 @@ class BookingValidationIssue(TypedDict):
     example: str
 
 
-class BookingConfirmationDecision(BaseModel):
-    intent: Literal["confirm", "decline", "change_request", "unclear"] = Field(
-        ..., 
-        description="Whether the user confirms the booking, declines it, asks to change it, or gives an unclear answer."
-    )
+BookingPhase = Literal["booking_details", "customer_name", "confirmation", "change_request", "done"] 
+
+GlobalIntent = Literal["none", "restart", "cancel", "help"]
+
+BookingStatus = Literal["confirmed", "cancelled"]
+
 
 class BookingAgentState(TypedDict):
     last_message: str
@@ -50,4 +59,6 @@ class BookingAgentState(TypedDict):
     customer_name: str | None
     missing_details: list[str] | None
     validation_errors: list[BookingValidationIssue] | None
-    booking_status: Literal["confirmed", "cancelled"] | None
+    booking_status: BookingStatus | None
+    phase: BookingPhase | None
+    global_intent: GlobalIntent | None
