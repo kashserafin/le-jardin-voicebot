@@ -18,8 +18,10 @@ from agent.helpers import (
 from agent.state import (
     BookingAgentState,
     BookingConfirmationDecision,
+    BookingConfirmationIntent,
     BookingDetails,
     BookingPhase,
+    BookingStatus,
     BookingValidationIssue,
     CustomerDetails,
     TurnIntent,
@@ -40,6 +42,9 @@ GET_CUSTOMER_NAME_MESSAGE = (
 )
 RETRY_CUSTOMER_NAME_MESSAGE = (
     "Sorry, I didn't catch the name. Can you please repeat it?"
+)
+RETRY_CONFIRMATION_MESSAGE = (
+    "Sorry, I didn't catch that. Should I book this table as described?"
 )
 
 openai_client = OpenAIClient()
@@ -102,7 +107,7 @@ def advance(state: BookingAgentState) -> Command:
         case BookingPhase.CUSTOMER_NAME:
             return advance_customer_name(state)
         case BookingPhase.CONFIRMATION:
-            return advance_confirmation(state)
+            return advance_booking_confirmation(state)
         case BookingPhase.CHANGE_REQUEST:
             return advance_change_request(state)
         case BookingPhase.DONE:
@@ -163,7 +168,6 @@ def advance_booking_details(state: BookingAgentState) -> Command:
     )
 
 
-# TODO: Implement advance_customer_name, advance_confirmation, and advance_change_request functions to handle the respective phases of the booking flow
 def advance_customer_name(state: BookingAgentState) -> Command:
     customer_name = extract_cutomer_name(state.get("last_message"))
 
@@ -189,8 +193,38 @@ def advance_customer_name(state: BookingAgentState) -> Command:
     )
 
 
-def advance_confirmation(state: BookingAgentState) -> Command:
-    return {}
+def advance_booking_confirmation(state: BookingAgentState) -> Command:
+    decision = classify_booking_confirmation(state.get("last_message"))
+
+    match decision:
+        case BookingConfirmationIntent.CONFIRM:
+            return Command(
+                update={
+                    "booking_status": BookingStatus.CONFIRMED,
+                    "phase": BookingPhase.DONE,
+                    "reply_text": None,
+                },
+                goto=END,
+            )
+        case BookingConfirmationIntent.DECLINE:
+            return Command(
+                update={
+                    "booking_status": BookingStatus.CANCELLED,
+                    "phase": BookingPhase.DONE,
+                    "reply_text": None,
+                },
+                goto=END,
+            )
+        case BookingConfirmationIntent.CHANGE_REQUEST:
+            return advance_change_request(state)
+        case _:
+            return Command(
+                update={
+                    "phase": BookingPhase.CONFIRMATION,
+                    "reply_text": RETRY_CONFIRMATION_MESSAGE,
+                },
+                goto="ask_user",
+            )
 
 
 def advance_change_request(state: BookingAgentState) -> Command:
@@ -231,6 +265,25 @@ def classify_turn_intent(state: BookingAgentState) -> TurnIntent:
         decision = TurnIntentDecision(intent=TurnIntent.UNCLEAR)
 
         return decision.intent
+
+
+def classify_booking_confirmation(
+    last_message: str | None,
+) -> BookingConfirmationIntent:
+    structured_llm = llm.with_structured_output(BookingConfirmationDecision)
+
+    try:
+        decision = structured_llm.invoke(
+            BOOKING_CONFIRMATION_PROMPT.format(
+                booking_rules=booking_rules_summary(),
+                last_message=last_message,
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error classifying booking confirmation decision: {str(e)}")
+        decision = BookingConfirmationDecision(intent=BookingConfirmationIntent.UNCLEAR)
+
+    return decision.intent
 
 
 def extract_booking_details(
