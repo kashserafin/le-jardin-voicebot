@@ -20,6 +20,7 @@ from agent.state import (
     BookingConfirmationDecision,
     BookingDetails,
     BookingPhase,
+    BookingValidationIssue,
     CustomerDetails,
     TurnIntent,
     TurnIntentDecision,
@@ -36,6 +37,9 @@ INITIAL_MESSAGE = "Welcome to Le Jardin! I can help you book a table. What day w
 OUT_OF_SCOPE_MESSAGE = "Sorry, I can only help with table reservations. Please tell me the date, time, and number of guests for your booking."
 GET_CUSTOMER_NAME_MESSAGE = (
     "Great, that time is available. Can I get a name for the reservation?"
+)
+RETRY_CUSTOMER_NAME_MESSAGE = (
+    "Sorry, I didn't catch the name. Can you please repeat it?"
 )
 
 openai_client = OpenAIClient()
@@ -161,7 +165,28 @@ def advance_booking_details(state: BookingAgentState) -> Command:
 
 # TODO: Implement advance_customer_name, advance_confirmation, and advance_change_request functions to handle the respective phases of the booking flow
 def advance_customer_name(state: BookingAgentState) -> Command:
-    return {}
+    customer_name = extract_cutomer_name(state.get("last_message"))
+
+    if not customer_name:
+        return Command(
+            update={
+                "phase": BookingPhase.CUSTOMER_NAME,
+                "reply_text": RETRY_CUSTOMER_NAME_MESSAGE,
+            },
+            goto="ask_user",
+        )
+
+    booking_details = state.get("booking_details")
+    return Command(
+        update={
+            "customer_name": customer_name,
+            "phase": BookingPhase.CONFIRMATION,
+            "reply_text": build_booking_confirmation_question(
+                booking_details, customer_name
+            ),
+        },
+        goto="ask_user",
+    )
 
 
 def advance_confirmation(state: BookingAgentState) -> Command:
@@ -170,6 +195,42 @@ def advance_confirmation(state: BookingAgentState) -> Command:
 
 def advance_change_request(state: BookingAgentState) -> Command:
     return {}
+
+
+def restart(state: BookingAgentState) -> Command:
+    return Command(update=build_initial_state(INITIAL_MESSAGE), goto="ask_user")
+
+
+# TODO: Implement global_action function to handle global commands like cancel and help, and fallback function to handle out-of-scope and unclear input
+def global_action(state: BookingAgentState) -> Command:
+    return {}
+
+
+def fallback(state: BookingAgentState) -> Command:
+    return {}
+
+
+# TODO: Implement ask user function to interrupt the normal flow and ask the user for input when needed
+def ask_user(state: BookingAgentState) -> Command:
+    return {}
+
+
+# Helper functions to classify user intent and extract structured information from user messages
+def classify_turn_intent(state: BookingAgentState) -> TurnIntent:
+    structured_llm = llm.with_structured_output(TurnIntentDecision)
+
+    try:
+        decision = structured_llm.invoke(
+            TURN_INTENT_PROMPT.format(
+                state.get("phase", "booking_details"),
+                last_message=state.get("last_message"),
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error classifying turn intent: {str(e)}")
+        decision = TurnIntentDecision(intent=TurnIntent.UNCLEAR)
+
+        return decision.intent
 
 
 def extract_booking_details(
@@ -212,44 +273,81 @@ def extract_booking_details(
     return booking_details
 
 
-# TODO: Implement this function to validate the booking details and return structured validation errors for any invalid fields
-def validate_booking_details_model():
-    pass
-
-
-def restart(state: BookingAgentState) -> Command:
-    return Command(update=build_initial_state(INITIAL_MESSAGE), goto="ask_user")
-
-
-# TODO: Implement global_action function to handle global commands like cancel and help, and fallback function to handle out-of-scope and unclear input
-def global_action(state: BookingAgentState) -> Command:
-    return {}
-
-
-def fallback(state: BookingAgentState) -> Command:
-    return {}
-
-
-# TODO: Implement ask user function to interrupt the normal flow and ask the user for input when needed
-def ask_user(state: BookingAgentState) -> Command:
-    return {}
-
-
-def classify_turn_intent(state: BookingAgentState) -> TurnIntent:
-    structured_llm = llm.with_structured_output(TurnIntentDecision)
+def extract_cutomer_name(last_message: str | None) -> str | None:
+    structured_llm = llm.with_structured_output(CustomerDetails)
 
     try:
-        decision = structured_llm.invoke(
-            TURN_INTENT_PROMPT.format(
-                state.get("phase", "booking_details"),
-                last_message=state.get("last_message"),
-            )
+        customer_details = structured_llm.invoke(
+            CUSTOMER_NAME_PROMPT.format(last_message=last_message)
         )
     except Exception as e:
-        logger.error(f"Error classifying turn intent: {str(e)}")
-        decision = TurnIntentDecision(intent=TurnIntent.UNCLEAR)
+        logger.error(f"Error extracting customer name: {str(e)}")
+        return None
 
-        return decision.intent
+    return customer_details.name if customer_details is not None else None
+
+
+def validate_booking_details_model(
+    booking_details: BookingDetails | None,
+) -> tuple[BookingDetails, list[str], list[BookingValidationIssue]]:
+    booking_details = booking_details or BookingDetails()
+    missing_fields = []
+    validation_errors = []
+    date = None
+    time = None
+    party_size = None
+
+    if booking_details.date is None:
+        missing_fields.append("date")
+    else:
+        try:
+            date = validate_booking_date(booking_details.date)
+        except BookingValidationError as error:
+            validation_errors.append(
+                create_booking_validation_issue(
+                    error, booking_details.date, "25-12-2024"
+                )
+            )
+
+    if booking_details.time is None:
+        missing_fields.append("time")
+    else:
+        try:
+            time = validate_booking_time(booking_details.time)
+        except BookingValidationError as error:
+            validation_errors.append(
+                create_booking_validation_issue(error, booking_details.time, "19:30")
+            )
+
+    if booking_details.party_size is None:
+        missing_fields.append("party_size")
+    else:
+        try:
+            party_size = validate_party_size(booking_details.party_size)
+        except BookingValidationError as error:
+            validation_errors.append(
+                create_booking_validation_issue(error, booking_details.party_size, "4")
+            )
+
+    return (
+        BookingDetails(date=date, time=time, party_size=party_size),
+        missing_fields,
+        validation_errors,
+    )
+
+
+def create_booking_validation_issue(
+    error: BookingValidationError,
+    value: str | int,
+    example: str,
+) -> BookingValidationIssue:
+    return {
+        "field": error.field,
+        "value": str(value),
+        "message": error.message,
+        "reason": error.reason,
+        "example": example,
+    }
 
 
 # Create the graph
