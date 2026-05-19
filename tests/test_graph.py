@@ -12,17 +12,27 @@ os.environ.setdefault("LANGFUSE_BASE_URL", "http://localhost")
 
 from agent import graph
 from agent.booking_guardrails import validate_booking_date
-from agent.state import BookingConfirmationDecision, BookingDetails, CustomerDetails
-
+from agent.state import (
+    BookingConfirmationDecision,
+    BookingDetails,
+    CustomerDetails,
+    TurnIntentDecision,
+)
 
 REFERENCE_DATE = date(2026, 5, 5)
 
 
 class FakeStructuredOutput:
-    def __init__(self, outputs):
+    def __init__(self, outputs, default=None):
         self.outputs = outputs
+        self.default = default
 
     def invoke(self, _prompt):
+        if not self.outputs:
+            if self.default is not None:
+                return self.default
+            raise AssertionError("No fake LLM output provided.")
+
         output = self.outputs.pop(0)
         if isinstance(output, Exception):
             raise output
@@ -30,15 +40,28 @@ class FakeStructuredOutput:
 
 
 class FakeLLM:
-    def __init__(self, *, booking_outputs=(), customer_outputs=(), confirmation_outputs=()):
+    def __init__(
+        self,
+        *,
+        booking_outputs=(),
+        customer_outputs=(),
+        confirmation_outputs=(),
+        turn_outputs=(),
+    ):
         self.outputs_by_schema = {
             BookingDetails: list(booking_outputs),
             CustomerDetails: list(customer_outputs),
             BookingConfirmationDecision: list(confirmation_outputs),
+            TurnIntentDecision: list(turn_outputs),
+        }
+        self.defaults_by_schema = {
+            TurnIntentDecision: TurnIntentDecision(intent="phase_input"),
         }
 
     def with_structured_output(self, schema):
-        return FakeStructuredOutput(self.outputs_by_schema[schema])
+        return FakeStructuredOutput(
+            self.outputs_by_schema[schema], self.defaults_by_schema.get(schema)
+        )
 
 
 @pytest.fixture(autouse=True)
@@ -54,15 +77,7 @@ def graph_config():
 
 
 def initial_state(message: str):
-    return {
-        "last_message": message,
-        "booking_details": None,
-        "availability": None,
-        "customer_name": None,
-        "missing_details": None,
-        "validation_errors": None,
-        "booking_status": None,
-    }
+    return graph.build_initial_state(message)
 
 
 def interrupt_text(result):
@@ -89,7 +104,10 @@ def test_complete_booking_flow_confirms_after_customer_name(monkeypatch):
         initial_state("Can I book a table for four on 10-05-2026 at 19:30?"),
         config,
     )
-    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
+    assert (
+        interrupt_text(result)
+        == "Great, that time is available. Can I get a name for the reservation?"
+    )
 
     result = graph.app.invoke(Command(resume="Ada Lovelace"), config)
     assert interrupt_text(result) == (
@@ -104,7 +122,10 @@ def test_complete_booking_flow_confirms_after_customer_name(monkeypatch):
     assert result["availability"] is True
     assert result["booking_status"] == "confirmed"
     assert result["customer_name"] == "Ada Lovelace"
-    assert result["booking_details"] == BookingDetails(date="10-05-2026", time="19:30", party_size=4)
+    assert result["booking_details"] == BookingDetails(
+        date="10-05-2026", time="19:30", party_size=4
+    )
+    assert result["phase"] == "done"
 
 
 def test_missing_booking_details_are_requested_and_merged(monkeypatch):
@@ -129,8 +150,13 @@ def test_missing_booking_details_are_requested_and_merged(monkeypatch):
 
     result = graph.app.invoke(Command(resume="11-05-2026 at 18:00"), config)
 
-    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
-    assert result["booking_details"] == BookingDetails(date="11-05-2026", time="18:00", party_size=2)
+    assert (
+        interrupt_text(result)
+        == "Great, that time is available. Can I get a name for the reservation?"
+    )
+    assert result["booking_details"] == BookingDetails(
+        date="11-05-2026", time="18:00", party_size=2
+    )
     assert result["missing_details"] == []
     assert result["validation_errors"] == []
 
@@ -159,8 +185,14 @@ def test_invalid_booking_details_are_rejected_before_availability(monkeypatch):
         "Could you please try again?"
     )
     assert result["availability"] is None
-    assert result["booking_details"] == BookingDetails(date=None, time=None, party_size=None)
-    assert [error["field"] for error in result["validation_errors"]] == ["date", "time", "party_size"]
+    assert result["booking_details"] == BookingDetails(
+        date=None, time=None, party_size=None
+    )
+    assert [error["field"] for error in result["validation_errors"]] == [
+        "date",
+        "time",
+        "party_size",
+    ]
 
 
 def test_customer_name_retry_keeps_booking_until_name_is_collected(monkeypatch):
@@ -180,12 +212,22 @@ def test_customer_name_retry_keeps_booking_until_name_is_collected(monkeypatch):
     )
     config = graph_config()
 
-    result = graph.app.invoke(initial_state("Table for three on 12-05-2026 at 20:00."), config)
-    assert interrupt_text(result) == "Great, that time is available. Can I get a name for the reservation?"
+    result = graph.app.invoke(
+        initial_state("Table for three on 12-05-2026 at 20:00."), config
+    )
+    assert (
+        interrupt_text(result)
+        == "Great, that time is available. Can I get a name for the reservation?"
+    )
 
     result = graph.app.invoke(Command(resume="It's me."), config)
-    assert interrupt_text(result) == "Sorry, I didn't catch the name. Can you please repeat it?"
-    assert result["booking_details"] == BookingDetails(date="12-05-2026", time="20:00", party_size=3)
+    assert (
+        interrupt_text(result)
+        == "Sorry, I didn't catch the name. Can you please repeat it?"
+    )
+    assert result["booking_details"] == BookingDetails(
+        date="12-05-2026", time="20:00", party_size=3
+    )
 
     result = graph.app.invoke(Command(resume="Grace Hopper"), config)
     assert interrupt_text(result) == (
@@ -200,4 +242,6 @@ def test_customer_name_retry_keeps_booking_until_name_is_collected(monkeypatch):
     assert result["availability"] is True
     assert result["booking_status"] == "confirmed"
     assert result["customer_name"] == "Grace Hopper"
-    assert result["booking_details"] == BookingDetails(date="12-05-2026", time="20:00", party_size=3)
+    assert result["booking_details"] == BookingDetails(
+        date="12-05-2026", time="20:00", party_size=3
+    )
