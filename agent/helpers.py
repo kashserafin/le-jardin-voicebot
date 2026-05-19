@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from agent.booking_guardrails import DATE_FORMAT, TIME_FORMAT
-from agent.state import BookingDetails, BookingValidationIssue
+from agent.state import BookingDetails, BookingValidationIssue, BookingPhase
 
 
 def join_human_readable(items: list[str]) -> str:
