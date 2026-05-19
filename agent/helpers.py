@@ -125,3 +125,19 @@ def build_booking_confirmation_question(
         f"{guest_label} on {spoken_date} at {spoken_time}, "
         f"under the name {customer_name}, is that correct?"
     )
+
+
+def build_help_message(phase: BookingPhase) -> str:
+    match phase:
+        case BookingPhase.CUSTOMER_NAME:
+            return "Please tell me the name to put on the reservation."
+        case BookingPhase.CONFIRMATION:
+            return "Please say 'yes' to book it, 'no' to cancel it, or tell me what you'd like to change."
+        case BookingPhase.CHANGE_REQUEST:
+            return "Please tell me what you'd like to change about your booking."
+        case _:
+            return (
+                "I can help you book a table at Le Jardin. "
+                "Just tell me the date and time you'd like to come in, "
+                "and how many people are in your party."
+            )
