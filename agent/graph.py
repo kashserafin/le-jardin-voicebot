@@ -46,6 +46,7 @@ RETRY_CUSTOMER_NAME_MESSAGE = (
 RETRY_CONFIRMATION_MESSAGE = (
     "Sorry, I didn't catch that. Should I book this table as described?"
 )
+CHANGE_REQUEST_MESSAGE = "Sure, what would you like to change?"
 
 openai_client = OpenAIClient()
 llm = openai_client.chat_model(model="gpt-5.4-mini")
@@ -169,8 +170,9 @@ def advance_booking_details(state: BookingAgentState) -> Command:
 
 
 def advance_customer_name(state: BookingAgentState) -> Command:
-    customer_name = extract_cutomer_name(state.get("last_message"))
+    customer_name = extract_customer_name(state.get("last_message"))
 
+    # If we couldn't extract a name from the user's message, ask them to provide it again
     if not customer_name:
         return Command(
             update={
@@ -180,6 +182,7 @@ def advance_customer_name(state: BookingAgentState) -> Command:
             goto="ask_user",
         )
 
+    # If we were able to extract the name, ask the user to confirm the booking details along with their name
     booking_details = state.get("booking_details")
     return Command(
         update={
@@ -228,7 +231,74 @@ def advance_booking_confirmation(state: BookingAgentState) -> Command:
 
 
 def advance_change_request(state: BookingAgentState) -> Command:
-    return {}
+    current_details = state.get("booking_details") or BookingDetails()
+    current_name = state.get("customer_name")
+    changed_details = extract_booking_details(state, current_details)
+    changed_name = extract_customer_name(state.get("last_message"))
+
+    details_changed = changed_details != current_details
+    name_changed = bool(changed_name and changed_name != current_name)
+
+    # If the user requested a change but we couldn't extract any changes from their message, ask them to clarify
+    if not details_changed and not name_changed:
+        return Command(
+            update={
+                "phase": BookingPhase.CHANGE_REQUEST,
+                "reply_text": CHANGE_REQUEST_MESSAGE,
+            },
+            goto="ask_user",
+        )
+
+    # If we were able to extract changes, validate the new details and ask for any missing or invalid information
+    validated_details, missing_fields, validation_errors = (
+        validate_booking_details_model(changed_details)
+    )
+    customer_name = changed_name or current_name
+
+    if missing_fields or validation_errors:
+        question = build_missing_details_question(missing_fields, validation_errors)
+        return Command(
+            update={
+                "booking_details": validated_details,
+                "availability": None,
+                "customer_name": customer_name,
+                "missing_details": missing_fields,
+                "validation_errors": validation_errors,
+                "phase": BookingPhase.CHANGE_REQUEST,
+                "reply_text": question,
+            },
+            goto="ask_user",
+        )
+
+    # If the new details are valid but we don't have a customer name yet, ask for the name
+    if not customer_name:
+        return Command(
+            update={
+                "booking_details": validated_details,
+                "availability": True,
+                "missing_details": [],
+                "validation_errors": [],
+                "phase": BookingPhase.CUSTOMER_NAME,
+                "reply_text": GET_CUSTOMER_NAME_MESSAGE,
+            },
+            goto="ask_user",
+        )
+
+    # If the new details are valid and we have a customer name, ask the user to confirm the updated booking details
+    return Command(
+        update={
+            "booking_details": validated_details,
+            "availability": True,
+            "customer_name": customer_name,
+            "missing_details": [],
+            "validation_errors": [],
+            "phase": BookingPhase.CONFIRMATION,
+            "reply_text": build_booking_confirmation_question(
+                validated_details, customer_name
+            ),
+        },
+        goto="ask_user",
+    )
 
 
 def restart(state: BookingAgentState) -> Command:
@@ -326,7 +396,7 @@ def extract_booking_details(
     return booking_details
 
 
-def extract_cutomer_name(last_message: str | None) -> str | None:
+def extract_customer_name(last_message: str | None) -> str | None:
     structured_llm = llm.with_structured_output(CustomerDetails)
 
     try:
