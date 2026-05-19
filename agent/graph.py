@@ -355,7 +355,7 @@ def classify_turn_intent(state: BookingAgentState) -> TurnIntent:
     try:
         decision = structured_llm.invoke(
             TURN_INTENT_PROMPT.format(
-                state.get("phase", BookingPhase.BOOKING_DETAILS),
+                phase=state.get("phase", BookingPhase.BOOKING_DETAILS),
                 last_message=state.get("last_message"),
             )
         )
