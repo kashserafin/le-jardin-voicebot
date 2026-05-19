@@ -62,9 +62,7 @@ def build_missing_details_question(
     ]
 
     if missing_details and not validation_messages:
-        return (
-            "Sure. " f"Could you please tell me {join_human_readable(missing_details)}?"
-        )
+        return f"Sure. Could you please tell me {join_human_readable(missing_details)}?"
 
     if validation_messages and missing_details:
         return (
