@@ -41,6 +41,9 @@ OUT_OF_SCOPE_MESSAGE = "Sorry, I can only help with table reservations. Please t
 GET_CUSTOMER_NAME_MESSAGE = (
     "Great, that time is available. Can I get a name for the reservation?"
 )
+UPDATED_DETAILS_GET_CUSTOMER_NAME_MESSAGE = (
+    "Got it. Can I get a name for the reservation?"
+)
 RETRY_CUSTOMER_NAME_MESSAGE = (
     "Sorry, I didn't catch the name. Can you please repeat it?"
 )
@@ -90,7 +93,7 @@ def route_turn(state: BookingAgentState) -> Command:
                 goto="ask_user",
             )
         case TurnIntent.UNCLEAR:
-            return Command(update={"turn_intent": turn_intent}, goto="ask_user")
+            return Command(update={"turn_intent": turn_intent}, goto="fallback")
         case _:
             return Command(
                 update={
@@ -173,9 +176,44 @@ def advance_booking_details(state: BookingAgentState) -> Command:
 
 def advance_customer_name(state: BookingAgentState) -> Command:
     customer_name = extract_customer_name(state.get("last_message"))
+    booking_details = state.get("booking_details") or BookingDetails()
 
     # If we couldn't extract a name from the user's message, ask them to provide it again
     if not customer_name:
+        changed_details = extract_booking_details(state, booking_details)
+
+        if changed_details != booking_details:
+            validated_details, missing_fields, validation_errors = (
+                validate_booking_details_model(changed_details)
+            )
+
+            if missing_fields or validation_errors:
+                return Command(
+                    update={
+                        "booking_details": validated_details,
+                        "availability": None,
+                        "missing_details": missing_fields,
+                        "validation_errors": validation_errors,
+                        "phase": BookingPhase.BOOKING_DETAILS,
+                        "reply_text": build_missing_details_question(
+                            missing_fields, validation_errors
+                        ),
+                    },
+                    goto="ask_user",
+                )
+
+            return Command(
+                update={
+                    "booking_details": validated_details,
+                    "availability": True,
+                    "missing_details": [],
+                    "validation_errors": [],
+                    "phase": BookingPhase.CUSTOMER_NAME,
+                    "reply_text": UPDATED_DETAILS_GET_CUSTOMER_NAME_MESSAGE,
+                },
+                goto="ask_user",
+            )
+
         return Command(
             update={
                 "phase": BookingPhase.CUSTOMER_NAME,
@@ -304,7 +342,13 @@ def advance_change_request(state: BookingAgentState) -> Command:
 
 
 def restart(state: BookingAgentState) -> Command:
-    return Command(update=build_initial_state(INITIAL_MESSAGE), goto="ask_user")
+    return Command(
+        update={
+            **build_initial_state(message=INITIAL_MESSAGE),
+            "reply_text": INITIAL_MESSAGE,
+        },
+        goto="ask_user",
+    )
 
 
 def global_action(state: BookingAgentState) -> Command:
@@ -363,7 +407,7 @@ def classify_turn_intent(state: BookingAgentState) -> TurnIntent:
         logger.error(f"Error classifying turn intent: {str(e)}")
         decision = TurnIntentDecision(intent=TurnIntent.UNCLEAR)
 
-        return decision.intent
+    return decision.intent
 
 
 def classify_booking_confirmation(
